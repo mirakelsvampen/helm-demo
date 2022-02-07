@@ -1,0 +1,130 @@
+# Default values for helm-demo.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+backend:
+  name: redis
+
+  master:
+    name: master
+    replicaCount: 1
+    image:
+      repository: k8s.gcr.io/redis:e2e
+      pullPolicy: IfNotPresent
+      tag: ""
+    labels:
+      app: redis
+      role: master
+      tier: backend
+    autoscaling:
+      enabled: false
+      minReplicas: 1
+      maxReplicas: 100
+      targetCPUUtilizationPercentage: 80
+    serviceAccount:
+      create: true
+      annotations: {}
+      name: ""
+    podAnnotations: {}
+    podSecurityContext: {}
+    securityContext: {}
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+    env: {}
+    service:
+      type: ClusterIP
+      port: 6379
+      protocol: TCP
+      name: redis
+    resources: 
+      requests:
+        cpu: 100m
+        memory: 100Mi
+
+  slave:
+    name: replica
+    replicaCount: 2
+    image:
+      repository: gcr.io/google_samples/gb-redisslave:v1
+      pullPolicy: IfNotPresent
+      tag: ""
+    labels:
+      app: redis
+      role: slave
+      tier: backend
+    autoscaling:
+      enabled: false
+      minReplicas: 1
+      maxReplicas: 100
+      targetCPUUtilizationPercentage: 80
+    serviceAccount:
+      create: true
+      annotations: {}
+      name: ""
+    podAnnotations: {}
+    podSecurityContext: {}
+    securityContext: {}
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+    env: 
+    - name: GET_HOSTS_FROM
+      value: dns
+    service:
+      type: ClusterIP
+      port: 6379
+    resources: {}
+
+frontend:
+  name: frontend
+  replicaCount: 3
+  image:
+    repository: gcr.io/google-samples/gb-frontend:v4
+    pullPolicy: IfNotPresent
+    tag: ""
+    containerName: php-redis
+  labels:
+    app: guestbook
+    tier: frontend
+  imagePullSecrets: []
+  nameOverride: ""
+  fullnameOverride: ""
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: ""
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext: {}
+  service:
+    type: ClusterIP
+    port: 80
+  env:
+    - name: GET_HOSTS_FROM
+      value: dns
+  resources: 
+    requests:
+      cpu: 100m
+      memory: 100Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 100
+    targetCPUUtilizationPercentage: 80
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: azure/application-gateway
+      appgw.ingress.kubernetes.io/backend-path-prefix: "/"
+    hosts:
+      - host: guestbook
+        paths:
+        - path: /
+          backend:
+            serviceName: frontend
+            servicePort: 80
+    tls: []
