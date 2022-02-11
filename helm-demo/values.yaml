@@ -2,6 +2,14 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "guestbook-sa"
+
+nameOverride: ""
+fullnameOverride: ""
+
 backend:
   name: redis
 
@@ -9,22 +17,13 @@ backend:
     name: master
     replicaCount: 1
     image:
-      repository: k8s.gcr.io/redis:e2e
+      repository: k8s.gcr.io/redis
       pullPolicy: IfNotPresent
-      tag: ""
+      tag: e2e
     labels:
       app: redis
       role: master
       tier: backend
-    autoscaling:
-      enabled: false
-      minReplicas: 1
-      maxReplicas: 100
-      targetCPUUtilizationPercentage: 80
-    serviceAccount:
-      create: true
-      annotations: {}
-      name: ""
     podAnnotations: {}
     podSecurityContext: {}
     securityContext: {}
@@ -46,22 +45,13 @@ backend:
     name: replica
     replicaCount: 2
     image:
-      repository: gcr.io/google_samples/gb-redisslave:v1
+      repository: gcr.io/google_samples/gb-redisslave
       pullPolicy: IfNotPresent
-      tag: ""
+      tag: v1
     labels:
       app: redis
       role: slave
       tier: backend
-    autoscaling:
-      enabled: false
-      minReplicas: 1
-      maxReplicas: 100
-      targetCPUUtilizationPercentage: 80
-    serviceAccount:
-      create: true
-      annotations: {}
-      name: ""
     podAnnotations: {}
     podSecurityContext: {}
     securityContext: {}
@@ -77,24 +67,20 @@ backend:
     resources: {}
 
 frontend:
+
   name: frontend
+
   replicaCount: 3
   image:
-    repository: gcr.io/google-samples/gb-frontend:v4
+    repository: gcr.io/google-samples/gb-frontend
     pullPolicy: IfNotPresent
-    tag: ""
+    tag: v4
     containerName: php-redis
   labels:
     app: guestbook
     tier: frontend
   imagePullSecrets: []
-  nameOverride: ""
-  fullnameOverride: ""
-  serviceAccount:
-    create: true
-    annotations: {}
-    name: ""
-  podAnnotations: {}
+  podAnnotations: ""
   podSecurityContext: {}
   securityContext: {}
   service:
@@ -107,11 +93,6 @@ frontend:
     requests:
       cpu: 100m
       memory: 100Mi
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 100
-    targetCPUUtilizationPercentage: 80
   nodeSelector: {}
   tolerations: []
   affinity: {}
@@ -123,7 +104,7 @@ frontend:
     hosts:
       - host: guestbook
         paths:
-        - path: /
+        - path: /guestbook
           backend:
             serviceName: frontend
             servicePort: 80

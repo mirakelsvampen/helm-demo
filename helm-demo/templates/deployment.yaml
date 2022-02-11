@@ -2,11 +2,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.backend.name }}
+  name: {{ .Values.backend.master.name }}
 spec:
-  {{- if not .Values.backend.master.autoscaling.enabled }}
-  replicas: {{ .Values.backend.master.replicaCount }}
-  {{- end }}
   selector:
     matchLabels:
       {{- toYaml .Values.backend.master.labels | nindent 8 }}
@@ -22,7 +19,7 @@ spec:
         - name: {{ .Values.backend.master.name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.master.image.repository }}:{{ .Values.master.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.backend.master.image.repository }}:{{ .Values.backend.master.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.backend.master.image.pullPolicy}}
           ports:
             - name: {{ .Values.backend.master.service.name }}
@@ -30,18 +27,21 @@ spec:
               protocol: {{ .Values.backend.master.service.protocol }}
           livenessProbe:
             tcpSocket:
-              port: {{ .Values.backend.master.service.protocol }}
+              port: {{ .Values.backend.master.service.port }}
             initialDelaySeconds: 5
             periodSeconds: 10
           readinessProbe:
             tcpSocket:
-              port: {{ .Values.backend.master.service.protocol }}
+              port: {{ .Values.backend.master.service.port }}
             initialDelaySeconds: 15
             periodSeconds: 20
           resources:
             {{- toYaml .Values.backend.master.resources | nindent 12 }}
           env:
-            {{- toYaml .Values.backend.master.env | nindent 12 }}
+            {{- range .Values.backend.slave.env }}
+            - name: {{ .name }}
+              value: {{ .value }}  
+            {{- end }}
       {{- with .Values.backend.master.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -59,11 +59,8 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: "{{ .Values.backend.name }}-replica"
+  name: {{ .Values.backend.name }}-replica
 spec:
-  {{- if not .Values.backend.slave.autoscaling.enabled }}
-  replicas: {{ .Values.backend.slave.replicaCount }}
-  {{- end }}
   selector:
     matchLabels:
       {{- toYaml .Values.backend.slave.labels | nindent 8 }}
@@ -79,7 +76,7 @@ spec:
         - name: {{ .Values.backend.slave.name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.slave.image.repository }}:{{ .Values.slave.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.backend.slave.image.repository }}:{{ .Values.backend.slave.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.backend.slave.image.pullPolicy}}
           ports:
             - name: {{ .Values.backend.slave.service.name }}
@@ -87,18 +84,21 @@ spec:
               protocol: {{ .Values.backend.slave.service.protocol }}
           livenessProbe:
             tcpSocket:
-              port: {{ .Values.backend.slave.service.protocol }}
+              port: {{ .Values.backend.slave.service.port }}
             initialDelaySeconds: 5
             periodSeconds: 10
           readinessProbe:
             tcpSocket:
-              port: {{ .Values.backend.slave.service.protocol }}
+              port: {{ .Values.backend.slave.service.port }}
             initialDelaySeconds: 15
             periodSeconds: 20
           resources:
             {{- toYaml .Values.backend.slave.resources | nindent 12 }}
           env:
-            {{- toYaml .Values.backend.slave.env | nindent 12 }}
+            {{- range .Values.backend.slave.env }}
+            - name: {{ .name }}
+              value: {{ .value }}  
+            {{- end }}
       {{- with .Values.backend.slave.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -118,16 +118,13 @@ kind: Deployment
 metadata:
   name: frontend
 spec:
-  {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
-  {{- end }}
   selector:
     matchLabels:
       {{- toYaml .Values.frontend.labels | nindent 8 }}
   template:
     metadata:
       labels:
-        {{ .Values.frontend.podAnnotations | nindent 8 }}
+        {{- toYaml .Values.frontend.labels | nindent 8 }}
     spec:
       {{- with .Values.frontend.imagePullSecrets }}
       imagePullSecrets:
@@ -148,18 +145,21 @@ spec:
               protocol: {{ .Values.frontend.service.protocol }}
           livenessProbe:
             tcpSocket:
-              port: {{ .Values.frontend.service.protocol }}
+              port: {{ .Values.frontend.service.port }}
             initialDelaySeconds: 5
             periodSeconds: 10
           readinessProbe:
             tcpSocket:
-              port: {{ .Values.frontend.service.protocol }}
+              port: {{ .Values.frontend.service.port }}
             initialDelaySeconds: 15
             periodSeconds: 20
           resources:
             {{- toYaml .Values.frontend.resources | nindent 12 }}
           env:
-            {{- toYaml .Values.frontend.env | nindent 12 }}
+            {{- range .Values.backend.slave.env }}
+            - name: {{ .name }}
+              value: {{ .value }}  
+            {{- end }}
       {{- with .Values.frontend.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

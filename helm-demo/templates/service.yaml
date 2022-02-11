@@ -1,15 +1,43 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "helm-demo.fullname" . }}
+  name: {{ include "helm-demo.fullname" . }}-master
   labels:
-    {{- include "helm-demo.labels" . | nindent 4 }}
+    {{- toYaml .Values.backend.master.labels | nindent 4 }}
 spec:
-  type: {{ .Values.service.type }}
+  type: {{ .Values.backend.master.service.type }}
   ports:
-    - port: {{ .Values.service.port }}
+    - port: {{ .Values.backend.master.service.port }}
       targetPort: http
       protocol: TCP
       name: http
+  selector:
+    {{- include "helm-demo.selectorLabels" . | nindent 4 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm-demo.fullname" . }}-replica
+  labels:
+    {{- toYaml .Values.backend.slave.labels | nindent 4 }}
+spec:
+  type: {{ .Values.backend.slave.service.type }}
+  ports:
+    - port: {{ .Values.backend.slave.service.port }}
+      targetPort: {{ .Values.backend.slave.service.port }}
+  selector:
+    {{- include "helm-demo.selectorLabels" . | nindent 4 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm-demo.fullname" . }}-frontend
+  labels:
+    {{- toYaml .Values.frontend.labels | nindent 4 }}
+spec:
+  type: {{ .Values.frontend.service.type }}
+  ports:
+    - port: {{ .Values.frontend.service.port }}
+      targetPort: {{ .Values.frontend.service.port }}
   selector:
     {{- include "helm-demo.selectorLabels" . | nindent 4 }}
